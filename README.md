@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <h1 style="text-align: center">el-admin 后台管理系统</h1>
 <div style="text-align: center">
 
@@ -83,3 +84,7 @@ eladmin基于 Spring Boot 2.1.0 、 Jpa、 Spring Security、redis、Vue的前�
 项目的发展离不开你的支持，请作者喝杯咖啡吧！ps：辣条也行 ☕！ [Donate](https://docs.auauz.net/#/jz)
 #### 反馈交流
 - QQ交流群：891137268
+=======
+# StreamDataAnalyses
+A light-weight web tool to arrange the process of stream data analyses
+>>>>>>> 95191f28f86bc73622126b48612bfb735e7e7499
