@@ -18,6 +18,13 @@ import '@/icons' // icon
 import './router/index' // permission control
 import Router from 'vue-router'
 
+import axios from 'axios'
+import VueAxios from 'vue-axios'
+
+require('./views/taskserve/vue-jsplumb-editor/src/mock/index');
+
+Vue.use(VueAxios,axios);
+
 Vue.use(mavonEditor)
 Vue.use(permission)
 Vue.use(dict)

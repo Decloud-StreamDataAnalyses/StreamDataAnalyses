@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<all>
+    <code>
+
+        <Operator class="FlowUnion">
+            <Precode >
+
+            </Precode>
+            <Maincode>
+                DataStream&lt;String> result = dataStream1.union(dataStream2);
+            </Maincode>
+            <Parameter/>
+        </Operator>
+
+        <Operator class="AnomalyDetection">
+            <Precode class="class">
+                class MyAnomalyDetection%name% implements FlatMapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%nextLen%&lt;%nextPara%>>{
+                    private double threshold;
+                    public MyAnomalyDetection%name%(double threshold) {
+                        this.threshold = threshold;
+                    }
+                    @Override
+                    public void flatMap(Tuple%datasource1Len%&lt;%datasource1Para%> value, Collector&lt;Tuple%nextLen%&lt;%nextPara%>> out) throws Exception {
+                        String label = "Normal";
+                        if(value.f%keyIndex%>threshold)
+                            label = "Anormaly";
+                        Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple%nextLen%&lt;>();
+                        for (int i = 0; i &lt; tuple.getArity()-1; i++)
+                            tuple.setField(value.getField(i), i);
+                        tuple.setField(label, tuple.getArity()-1);
+                        out.collect(tuple);
+                } }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.flatMap(new MyAnomalyDetection%name%(%threshold%));
+            </Maincode>
+            <Parameter key="threshhold" value=""/>
+        </Operator>
+
+        <Operator class="DataSource" >
+            <Precode class="Function"></Precode>
+            <Maincode>
+                Properties propertiesSource = new Properties();
+                propertiesSource.put("auto.offset.reset", "earliest");
+                propertiesSource.put("group.id","test-consumer-group");
+                propertiesSource.put("bootstrap.servers", "%ip%:%port%");
+                DataStream&lt;String> dataStream = env.addSource(new FlinkKafkaConsumer&lt;String>("%topic%",
+                new SimpleStringSchema(), propertiesSource));
+            </Maincode>
+            <Parameter key="ip" value=""/>
+            <Parameter key="port" value=""/>
+            <Parameter key="topic" value=""/>
+        </Operator>
+
+        <Operator class="SourceTopic" >
+            <Precode class="Function">
+                class KafkaMap%name% implements MapFunction&lt;String, Tuple%cuurentLen%&lt;%currentPara%>>{
+                    @Override
+                    public Tuple%cuurentLen%&lt;%currentPara%> map(String value) throws Exception {
+                        String[] sp = value.split("\t");
+                        Tuple%cuurentLen%&lt;%currentPara%> tuple = new Tuple%cuurentLen%&lt;>();
+                        String paras = "%currentPara%";
+                        int label;
+                        if(paras.contains("Double"))
+                            label = 1;
+                        else if(paras.contains("Long"))
+                            label = 2;
+                        else
+                            label = 3;
+                        for (int i = 0; i &lt; sp.length; i++) {
+                            if(label == 1){
+                                try {
+                                    Double l = Double.parseDouble(sp[i]);
+                                    tuple.setField(l, i);
+                                }catch (Exception e){
+                                    tuple.setField(sp[i], i);
+                                }
+                            }
+                            else if(label == 2){
+                                try {
+                                    Long l = Long.parseLong(sp[i]);
+                                    tuple.setField(l, i);
+                                }catch (Exception e){
+                                    tuple.setField(sp[i], i);
+                                }
+                            }
+                            else
+                                tuple.setField(sp[i], i);
+                        }
+                        return tuple;
+                    }
+                }
+            </Precode>
+            <Maincode>
+                Properties properties%name% = new Properties();
+                properties%name%.put("auto.offset.reset", "latest");
+                properties%name%.put("group.id","test-consumer-group");
+                properties%name%.put("bootstrap.servers", "%ip%:%port%");
+                DataStream %name% = env.addSource(new FlinkKafkaConsumer&lt;String>("%topic%", new SimpleStringSchema()
+                , properties%name%)).map(new KafkaMap%name%())
+                .assignTimestampsAndWatermarks(
+                    new BoundedOutOfOrdernessTimestampExtractor&lt;Tuple%cuurentLen%&lt;%currentPara%>>(Time.seconds(5)) {
+                        @Override
+                        public long extractTimestamp(Tuple%cuurentLen%&lt;%currentPara%> element) {
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
+                            Date date = null;
+                            try {
+                                date = dateFormat.parse(element.f0);
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            return date.getTime();
+                        }
+                });
+            </Maincode>
+            <Parameter key="ip" value=""/>
+            <Parameter key="port" value=""/>
+            <Parameter key="topic" value=""/>
+            <Parameter key="parameters" value=""/>
+        </Operator>
+
+        <Operator class="SourceMySql" >
+            <Precode class="Function">
+                class HashSource extends RichParallelSourceFunction&lt;HashMap&lt;String, String>> {
+                HashMap&lt;String, String> hashMap = new HashMap&lt;>();
+                @Override
+                public void run(SourceContext&lt;HashMap&lt;String, String>> ctx) throws Exception {
+                while (true){
+                hashMap.put("v1.dc.com","user1");
+                hashMap.put("v2.dc.com","user1");
+                hashMap.put("v3.dc.com","user2");
+                hashMap.put("v4.dc.com","user2");
+                hashMap.put("v5.dc.com","user3");
+                ctx.collect(hashMap);
+                }
+                }
+                @Override
+                public void cancel() {}
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = env.addSource(new HashSource());
+            </Maincode>
+        </Operator>
+
+        <Operator class="SinkTopic" >
+            <Precode class="Function">
+                class TupleToString%name% implements MapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, String>{
+                    @Override
+                    public String map(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                        String s = "";
+                        for (int i = 0; i &lt; value.getArity(); i++) {
+                            if(s.length()==0)
+                                s += value.getField(i);
+                            else
+                                s += (","+value.getField(i));
+                        }
+                        return s;
+                    }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.map(new TupleToString%name%());
+                Properties properties%name% = new Properties();
+                properties%name%.put("auto.offset.reset", "latest");
+                properties%name%.put("group.id","test-consumer-group");
+                properties%name%.put("bootstrap.servers", "%ip%:%port%");
+                %name%.addSink(new FlinkKafkaProducer&lt;String>("%topic%", new SimpleStringSchema(), properties%name%));
+            </Maincode>
+            <Parameter key="ip" value=""/>
+            <Parameter key="port" value=""/>
+            <Parameter key="topic" value=""/>
+
+        </Operator>
+
+        <Operator class="StreamHashConnect" >
+            <Precode class="Function">
+                class StreamHashConnect implements CoFlatMapFunction&lt;Tuple3&lt;Long, String, Long>, HashMap&lt;String, String>, Tuple4&lt;Long,String,String,Long>>{
+                HashMap&lt;String, String> hashMap ;
+                @Override
+                public void flatMap1(Tuple3&lt;Long, String, Long> value, Collector&lt;Tuple4&lt;Long, String, String, Long>> out) throws Exception {
+                String domain = value.f%index%;
+                String userID = hashMap.getOrDefault(domain, "");
+                out.collect(new Tuple4&lt;Long,String,String,Long>(value.f0, userID, value.f1, value.f2));
+                }
+                @Override
+                public void flatMap2(HashMap&lt;String, String> value, Collector&lt;Tuple4&lt;Long, String, String, Long>> out) throws Exception {
+                hashMap = value;
+                }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.connect(%datasource2%).flatMap(new StreamHashConnect());
+            </Maincode>
+            <parameter key="index" value="1"/>
+        </Operator>
+
+        <Operator class="DeleteColumn" >
+            <Precode class="Function">
+                class DeleteColumn%name% implements MapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%nextLen%&lt;%nextPara%>>{
+                    int index;
+                    public DeleteColumn%name%(int index) {
+                        this.index = index;
+                    }
+                    @Override
+                    public Tuple%nextLen%&lt;%nextPara%> map(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                        Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple%nextLen%&lt;>();
+                        int j = 0;
+                        for (int i = 0; i &lt; value.getArity(); i++) {
+                            if(i != index){
+                                tuple.setField(value.getField(i), j);
+                                j++;
+                            }
+                        }
+                        return tuple;
+                    }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.map(new DeleteColumn%name%(%index%));
+            </Maincode>
+            <parameter key="parameters" value="Long,String,String,Long"/>
+            <parameter key="index" value="2"/>
+        </Operator>
+
+        <Operator class="TumbleWindowSum" >
+            <Precode class="Function"></Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%
+                    .windowAll(TumblingEventTimeWindows.of(Time.seconds(%windowSize%)))
+                    .sum(%sumIndex%);
+            </Maincode>
+            <parameter key="keyIndex" value="1"/>
+            <parameter key="windowSize" value="5"/>
+            <parameter key="sumIndex" value="2"/>
+        </Operator>
+
+        <Operator class="TumbleWindowMax" >
+            <Precode class="Function"></Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%
+                .windowAll(TumblingEventTimeWindows.of(Time.seconds(%windowSize%)))
+                .max(%sumIndex%);
+            </Maincode>
+            <parameter key="keyIndex" value="1"/>
+            <parameter key="windowSize" value="5"/>
+            <parameter key="sumIndex" value="2"/>
+        </Operator>
+
+        <Operator class="SlideWindowSum" >
+            <Precode class="Function"></Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%
+                .windowAll(SlidingEventTimeWindows.of(Time.seconds(%windowSize%), Time.seconds(%slideSize%)))
+                .sum(%sumIndex%);
+            </Maincode>
+        </Operator>
+
+        <Operator class="SlideWindowMax" >
+            <Precode class="Function"></Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%
+                .windowAll(SlidingEventTimeWindows.of(Time.seconds(%windowSize%), Time.seconds(%slideSize%)))
+                .max(%sumIndex%);
+            </Maincode>
+        </Operator>
+
+        <Operator class="MyStringFilter" >
+            <Precode class="Function">
+                class MyStringFilter%name% implements FilterFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>>{
+                    @Override
+                    public boolean filter(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                        return value.getField(%index%).equals("%keyword%");
+                    }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.filter(new MyStringFilter%name%());
+            </Maincode>
+            <!--<parameter key="keyword" value="user1"/>-->
+            <!--<parameter key="index" value="1"/>-->
+        </Operator>
+
+        <Operator class="MyNumberFilter" >
+            <Precode class="Function">
+                class MyNumberFilter%name% implements FilterFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>>{
+                    @Override
+                    public boolean filter(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                        return value.f%index%%keyword%;
+                    }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.filter(new MyNumberFilter%name%());
+            </Maincode>
+            <!--<parameter key="keyword" value="user1"/>-->
+            <!--<parameter key="index" value="1"/>-->
+        </Operator>
+
+        <Operator class="FlowInnerJoin" >
+            <Precode class="Function">
+
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%
+                .join(%datasource2%)
+                .where((KeySelector&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, String>) value -> value.f%datasource1KeyIndex%)
+                .equalTo((KeySelector&lt;Tuple%datasource2Len%&lt;%datasource2Para%>, String>) value -> value.f%datasource2KeyIndex%)
+                .window(TumblingEventTimeWindows.of(Time.seconds(%windowSize%)))
+                .apply(new JoinFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%datasource2Len%&lt;%datasource2Para%>, Tuple%nextLen%&lt;%nextPara%>>() {
+                    @Override
+                    public Tuple%nextLen%&lt;%nextPara%> join(Tuple%datasource1Len%&lt;%datasource1Para%> first, Tuple%datasource2Len%&lt;%datasource2Para%> second){
+                        Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple%nextLen%&lt;>();
+                        int indexA = %datasource1KeyIndex%;
+                        int indexB = %datasource2KeyIndex%;
+                        for (int i = 0; i &lt; first.getArity(); i++)
+                            tuple.setField(first.getField(i), i);
+                        for (int i = 0; i &lt; second.getArity(); i++)
+                            if (i != indexB)
+                                tuple.setField(second.getField(i), first.getArity()+i-1);
+                        return tuple;
+                    }
+                })
+                .windowAll(TumblingEventTimeWindows.of(Time.seconds(%windowSize%)))
+                .apply(new AllWindowFunction&lt;Tuple%nextLen%&lt;%nextPara%>, Tuple%nextLen%&lt;%nextPara%>, TimeWindow>() {
+                    @Override
+                    public void apply(TimeWindow window, Iterable&lt;Tuple%nextLen%&lt;%nextPara%>> values, Collector&lt;Tuple%nextLen%&lt;%nextPara%>> out) throws Exception {
+                        Iterator&lt;Tuple%nextLen%&lt;%nextPara%>> iterator = values.iterator();
+                        List&lt;Tuple%nextLen%&lt;%nextPara%>> tupleList= new ArrayList&lt;>();
+                        while (iterator.hasNext()){
+                            Tuple%nextLen%&lt;%nextPara%> next = iterator.next();
+                            tupleList.add(next);
+                        }
+                        tupleList.sort((o1, o2) -> o1.f%datasource1KeyIndex%.compareTo(o2.f%datasource2KeyIndex%));
+                        for (int i = 0; i &lt; tupleList.size(); i++) {
+                            out.collect(tupleList.get(i));
+                        }
+                    }
+                });
+            </Maincode>
+        </Operator>
+
+        <Operator class="FlowFullJoin" >
+            <Precode class="Function">
+
+            </Precode>
+            <Maincode>
+                DataStream&lt;Tuple%nextLen%&lt;%nextPara%>> %name% = %datasource1%.coGroup(%datasource2%)
+                .where((KeySelector&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, String>) value -> value.f0)
+                .equalTo((KeySelector&lt;Tuple%datasource2Len%&lt;%datasource2Para%>, String>) value -> value.f0)
+                .window(TumblingEventTimeWindows.of(Time.seconds(%windowSize%)))
+                .apply(new CoGroupFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%datasource2Len%&lt;%datasource2Para%>, Tuple%nextLen%&lt;%nextPara%>>() {
+                @Override
+                public void coGroup(Iterable&lt;Tuple%datasource1Len%&lt;%datasource1Para%>> first, Iterable&lt;Tuple%datasource2Len%&lt;%datasource2Para%>> second
+                , Collector&lt;Tuple%nextLen%&lt;%nextPara%>> out) throws Exception {
+                Tuple%datasource1Len%&lt;%datasource1Para%> left = null;
+                Tuple%datasource2Len%&lt;%datasource2Para%> right = null;
+                Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple4&lt;>();
+                if(first.iterator().hasNext())
+                left = first.iterator().next();
+                if(second.iterator().hasNext())
+                right = second.iterator().next();
+                if(left == null){
+                for (int i = 0; i &lt; %datasource1Len%; i++) {
+                if(i == 0)
+                tuple.setField(right.f0, i);
+                else
+                tuple.setField(null, i);
+                }
+                for (int i = %datasource1Len%; i &lt; %datasource1Len% + %datasource2Len% - 1; i++) {
+                tuple.setField(right.getField(i-%datasource1Len%+1), i);
+                }
+                }
+
+                if(right == null){
+                for (int i = 0; i &lt; %datasource1Len%; i++) {
+                tuple.setField(left.getField(i), i);
+                }
+                for (int i = %datasource1Len%; i &lt; %datasource1Len% + %datasource2Len% - 1; i++) {
+                tuple.setField(null, i);
+                }
+                }
+                if(right!=null &amp;&amp; left!=null){
+                for (int i = 0; i &lt; %datasource1Len% + %datasource2Len%; i++) {
+                if(i&lt;%datasource1Len%)
+                tuple.setField(left.getField(i), i);
+                else
+                tuple.setField(right.getField(i-%datasource1Len%+1), i);
+                }
+                }
+                out.collect(tuple);
+                }
+                });
+            </Maincode>
+        </Operator>
+        
+        <Operator class="Union" >
+            <Precode class="Function">
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.union(%unionSource%);
+            </Maincode>
+        </Operator>
+        
+        <Operator class="Split" >
+            <Precode class="Function">
+                class MySplit implements OutputSelector&lt;Tuple%datasource1Len%&lt;%datasource1Para%>>{
+                @Override
+                public Iterable&lt;String> select(Tuple%cuurentLen% value) {
+                ArrayList&lt;String> list = new ArrayList&lt;>();
+                if(value.f%index%.equals("%Stream1%"))
+                list.add("%Stream1%");
+                %aStream%
+                return list;
+                }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.split(new MySplit());
+            </Maincode>
+            <parameter key="keyword" value="user1"/>
+            <parameter key="index" value="1"/>
+        </Operator>
+        
+        <Operator class="Select" >
+            <Precode class="Function">
+            </Precode>
+            <Maincode>
+                DataStream %name% = ((SplitStream) %datasource1%).select("%key%");
+            </Maincode>
+        </Operator>
+
+        <!--特征编码-->
+        <Operator class="LabelEncoder" >
+            <Precode class="Function">
+                class LabelEncoder implements MapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%nextLen%&lt;%nextPara%>>{
+                @Override
+                public Tuple%nextLen%&lt;%nextPara%> map(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple%nextLen%&lt;>();
+                for (int i = 0; i &lt; value.getArity(); i++) {
+                if(i==%index%){
+                if(DataShow.labelMap.getOrDefault(value.f%index%, -1l) != -1l){
+                tuple.setField(DataShow.labelMap.get(value.f%index%) , i);
+                }
+                else {
+                tuple.setField(DataShow.labelIndex , i);
+                DataShow.labelMap.put(value.f%index%, DataShow.labelIndex);
+                DataShow.labelIndex++;
+                }
+                }
+                else
+                tuple.setField(value.getField(i) , i);
+                }
+                return tuple;
+                }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.map(new LabelEncoder());
+            </Maincode>
+        </Operator>
+
+        // 归一化
+        <Operator class="MinMaxScaler" >
+            <Precode class="Function">
+                class MinMaxScaler%name% implements MapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, Tuple%nextLen%&lt;%nextPara%>>{
+                @Override
+                public Tuple%nextLen%&lt;%nextPara%> map(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                Tuple%nextLen%&lt;%nextPara%> tuple = new Tuple%nextLen%&lt;>();
+                Double scala = %max%d - %min%d;
+                for (int i = 0; i &lt; tuple.getArity(); i++) {
+                if(i == %index%){
+                tuple.setField(value.f%index%/scala , i);
+                }
+                else
+                tuple.setField(value.getField(i), i);
+                }
+                return tuple;
+                }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.map(new MinMaxScaler%name%());
+            </Maincode>
+        </Operator>
+        
+        <Operator class="TaskName">
+            <Precode/>
+            <Maincode>    env.execute("%taskname%");
+            </Maincode>
+        </Operator>
+
+        <Operator class="REST">
+            <Precode>
+                class TupleToString%name% implements MapFunction&lt;Tuple%datasource1Len%&lt;%datasource1Para%>, String>{
+                    @Override
+                    public String map(Tuple%datasource1Len%&lt;%datasource1Para%> value) throws Exception {
+                        String s = "";
+                        for (int i = 0; i &lt; value.getArity(); i++) {
+                            if(s.length()==0)
+                                s += value.getField(i);
+                            else
+                                s += (","+value.getField(i));
+                        }
+                        return s;
+                    }
+                }
+            </Precode>
+            <Maincode>
+                DataStream %name% = %datasource1%.map(new TupleToString%name%());
+                Properties properties%name% = new Properties();
+                properties%name%.put("auto.offset.reset", "latest");
+                properties%name%.put("group.id","test-consumer-group");
+                properties%name%.put("bootstrap.servers", "%ip%:%port%");
+                %name%.addSink(new FlinkKafkaProducer&lt;String>("%topic%", new SimpleStringSchema(), properties%name%));
+            </Maincode>
+        </Operator>
+    </code>
+</all>

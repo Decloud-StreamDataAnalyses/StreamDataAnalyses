@@ -55,6 +55,9 @@ public class LogServiceImpl implements LogService {
         if ("ERROR".equals(criteria.getLogType())) {
             return PageUtil.toPage(page.map(logErrorMapper::toDto));
         }
+        System.out.println("============================");
+        System.out.println(page);
+        System.out.println("============================");
         return page;
     }
 
@@ -63,7 +66,6 @@ public class LogServiceImpl implements LogService {
         System.out.println("============================");
         System.out.println(logRepository.findAll());
         System.out.println("============================");
-
         return logRepository.findAll(((root, criteriaQuery, cb) -> QueryHelp.getPredicate(root, criteria, cb)));
     }
 

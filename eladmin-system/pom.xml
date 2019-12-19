@@ -34,7 +34,17 @@
             <artifactId>eladmin-tools</artifactId>
             <version>2.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>me.zhengjie</groupId>
+            <artifactId>eladmin-task</artifactId>
+            <version>2.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>me.zhengjie</groupId>
+                    <artifactId>eladmin-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!--jwt-->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

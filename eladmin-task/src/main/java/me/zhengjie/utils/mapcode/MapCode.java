@@ -28,7 +28,7 @@ public class MapCode {
         String mainCode = Constants.MAINSTART;
         code += Constants.IMPORTPKG;
         List<String> tasks = new ArrayList<String>();
-        String codeXmlStr = "src\\main\\resources\\code.xml";
+        String codeXmlStr = "eladmin-task\\src\\main\\resources\\code.xml";
         // 读 code.xml
         Map<String, OperatorObject> operatorObjectMap = parseconfigxml(codeXmlStr);
         //将整个字符串分割为若干个小的任务，采用的是树遍历，前后合并

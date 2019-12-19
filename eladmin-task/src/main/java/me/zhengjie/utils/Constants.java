@@ -1,5 +1,6 @@
 package me.zhengjie.utils;
 
+
 public class Constants {
     public static String IMPORTPKG = "import org.apache.flink.api.common.functions.FlatMapFunction;\n" +
             "import org.apache.flink.api.common.serialization.SimpleStringSchema;\n" +
@@ -9,9 +10,9 @@ public class Constants {
             "import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;\n" +
             "import org.apache.flink.api.java.tuple.*;\n" +
             "import org.apache.flink.api.common.typeinfo.Types;\n" +
-            "import org.apache.flink.utils.Collector;\n" +
-            "import java.utils.LinkedList;\n" +
-            "import java.utils.Properties;\n" +
+            "import org.apache.flink.util.Collector;\n" +
+            "import java.util.LinkedList;\n" +
+            "import java.util.Properties;\n" +
             "import org.apache.flink.api.common.functions.MapFunction;\n" +
             "import org.apache.flink.api.java.tuple.Tuple2;\n" +
             "import org.apache.flink.api.java.tuple.Tuple3;\n" +
@@ -23,7 +24,7 @@ public class Constants {
             "import org.apache.flink.streaming.api.windowing.time.Time;\n" +
             "import javax.annotation.Nullable;\n" +
             "import java.text.SimpleDateFormat;\n" +
-            "import java.utils.*;\n" +
+            "import java.util.*;\n" +
             "import org.apache.flink.api.common.functions.FilterFunction;\n" +
             "import org.apache.flink.streaming.api.datastream.SplitStream;\n" +
             "import org.apache.flink.streaming.api.collector.selector.OutputSelector;\n" +

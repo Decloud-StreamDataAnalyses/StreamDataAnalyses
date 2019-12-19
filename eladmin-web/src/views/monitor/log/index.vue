@@ -64,10 +64,14 @@ export default {
       const sort = 'id,desc'
       const query = this.query
       const value = query.value
+      console.log('value:', value)
       this.params = { page: this.page, size: this.size, sort: sort }
+      console.log('page:', this.page)
+      console.log('size:', this.size)
       if (value) { this.params['blurry'] = value }
       this.params['logType'] = 'INFO'
       if (query.date) {
+        console.log('query:' , query.date)
         this.params['startTime'] = query.date[0]
         this.params['endTime'] = query.date[1]
       }

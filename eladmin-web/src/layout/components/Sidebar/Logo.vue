@@ -3,8 +3,11 @@
     <!-- 缩小时显示的logo，可以自定义，这里直接使用图标库中的 -->
     <svg-icon v-if="isCollapse" icon-class="run" />
     <!--正常状态下显示的，可以使用本地的logoImg-->
-    <div class="logo-con">
-      <img src="https://aurora-1255840532.cos.ap-chengdu.myqcloud.com/logo.png">
+    <div class="logo-con" >
+
+      <!--首页大logo-->
+      <!--<img src="https://aurora-1255840532.cos.ap-chengdu.myqcloud.com/logo.png">-->
+      <span style="color:white;font-size:16px;font-weight:bold">服务智能交付交互工具</span>
       <!--<img :src="logoImg">-->
     </div>
   </el-menu-item>

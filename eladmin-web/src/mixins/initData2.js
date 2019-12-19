@@ -1,5 +1,6 @@
 import { initData } from '@/api/data'
 
+
 export default {
   data() {
     return {
@@ -13,11 +14,10 @@ export default {
       }
       return new Promise((resolve, reject) => {
         this.loading = true
-        console.log('this.params:',this.params)
         initData(this.url, this.params).then(res => {
           console.log('res:',res)
           this.total = res.totalElements
-          this.data = res.content
+          this.data = res.list
           setTimeout(() => {
             this.loading = false
           }, this.time)

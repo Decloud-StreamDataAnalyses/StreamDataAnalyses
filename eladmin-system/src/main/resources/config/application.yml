@@ -12,6 +12,9 @@ spring:
     redis:
       repositories:
         enabled: false
+  security:
+    basic:
+      enabled: false
 
   #配置 Jpa
   jpa:

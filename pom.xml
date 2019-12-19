@@ -18,7 +18,7 @@
         <module>eladmin-task</module>
     </modules>
 
-    <name>EL-ADMIN后台管理系统</name>
+    <name>服务智能交付交互工具</name>
     <url>http://auauz.net</url>
 
     <parent>
